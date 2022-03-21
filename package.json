@@ -1,0 +1,22 @@
+{
+  "name": "auction",
+  "version": "1.0.0",
+  "description": "",
+  "main": "soljson-v0.8.12+commit.f00d7308.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sssmi/Auction.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sssmi/Auction/issues"
+  },
+  "homepage": "https://github.com/sssmi/Auction#readme",
+  "devDependencies": {
+    "solhint": "^3.3.7"
+  }
+}
