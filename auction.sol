@@ -16,7 +16,7 @@ contract Auction {
   State public auctionState;
 
   uint256 public highestBindingBid;
-  address payable public higherBidder;
+  address payable public highestsBidder;
 
   mapping(address => uint256) public bids;
   uint256 bidIncrement;
@@ -32,5 +32,41 @@ contract Auction {
 
     // Min bid 100 wei
     bidIncrement = 100;
+  }
+
+  modifier notOwner() {
+    require(msg.sender != owner);
+    _;
+  }
+
+  modifier afterStart() {
+    require(block.number >= startBlock);
+    _;
+  }
+
+  modifier beforeEnd() {
+    require(block.number <= endBlock);
+    _;
+  }
+
+  function min(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    c = a < b ? a : b;
+  }
+
+  function placeBid() public payable notOwner afterStart beforeEnd {
+    require(auctionState == State.Running);
+    require(msg.value >= bidIncrement);
+
+    uint256 currentBid = bids[msg.sender] + msg.value;
+    require(currentBid > bidIncrement);
+
+    bids[msg.sender] = currentBid;
+
+    if (currentBid <= bids[highestsBidder]) {
+      highestBindingBid = min(currentBid + bidIncrement, bids[highestsBidder]);
+    } else {
+      highestBindingBid = min(currentBid, bids[highestsBidder] + bidIncrement);
+      highestsBidder = payable(msg.sender);
+    }
   }
 }
