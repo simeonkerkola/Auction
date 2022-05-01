@@ -2,6 +2,15 @@
 
 pragma solidity 0.8.13;
 
+contract AuctionCreator {
+  Auction[] public auctions;
+
+  function createAuction() public {
+    Auction auction = new Auction(msg.sender);
+    auctions.push(auction);
+  }
+}
+
 contract Auction {
   address payable public owner;
   uint256 public startBlock;
@@ -21,10 +30,10 @@ contract Auction {
   mapping(address => uint256) public bids;
   uint256 bidIncrement;
 
-  constructor() {
+  constructor(address externallyOwnedAccount) {
     // 15 sec per block
     uint256 blocksInWeek = 40320;
-    owner = payable(msg.sender);
+    owner = payable(externallyOwnedAccount);
     auctionState = State.Running;
     startBlock = block.number;
     endBlock = startBlock + blocksInWeek;
@@ -67,13 +76,18 @@ contract Auction {
     require(msg.value >= bidIncrement);
 
     uint256 currentBid = bids[msg.sender] + msg.value;
+
+    // The currentBid should be greater than the highestBindingBid.
+    // Otherwise there's nothing to do.
     require(currentBid > bidIncrement);
 
     bids[msg.sender] = currentBid;
 
+    // HighestBidder remains unchanged
     if (currentBid <= bids[highestBidder]) {
       highestBindingBid = min(currentBid + bidIncrement, bids[highestBidder]);
     } else {
+      // HighestBidder is another bidder
       highestBindingBid = min(currentBid, bids[highestBidder] + bidIncrement);
       highestBidder = payable(msg.sender);
     }
@@ -86,25 +100,22 @@ contract Auction {
     address payable recipient;
     uint256 value;
 
+    // Auction was cancelled
     if (auctionState == State.Canceled) {
-      // Auction was cancelled
-
       recipient = payable(msg.sender);
       value = bids[msg.sender];
     } else {
       // Auction ended (not cancelled)
 
+      // Ended by owner
       if (msg.sender == owner) {
-        // Ended by owner
-
         recipient = owner;
         value = highestBindingBid;
       } else {
         // Ended by a bidder
 
+        // Highest bidder gets back what they bidded, minus the winning bid
         if (msg.sender == highestBidder) {
-          // Highest bidder gets back what they bidded, minus the winning bid
-
           recipient = highestBidder;
           value = bids[highestBidder] - highestBindingBid;
         } else {
