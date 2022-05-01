@@ -16,7 +16,7 @@ contract Auction {
   State public auctionState;
 
   uint256 public highestBindingBid;
-  address payable public highestsBidder;
+  address payable public highestBidder;
 
   mapping(address => uint256) public bids;
   uint256 bidIncrement;
@@ -71,11 +71,48 @@ contract Auction {
 
     bids[msg.sender] = currentBid;
 
-    if (currentBid <= bids[highestsBidder]) {
-      highestBindingBid = min(currentBid + bidIncrement, bids[highestsBidder]);
+    if (currentBid <= bids[highestBidder]) {
+      highestBindingBid = min(currentBid + bidIncrement, bids[highestBidder]);
     } else {
-      highestBindingBid = min(currentBid, bids[highestsBidder] + bidIncrement);
-      highestsBidder = payable(msg.sender);
+      highestBindingBid = min(currentBid, bids[highestBidder] + bidIncrement);
+      highestBidder = payable(msg.sender);
     }
+  }
+
+  function finalizeAuction() public {
+    require(auctionState == State.Canceled || block.number > endBlock);
+    require(msg.sender == owner || bids[msg.sender] > 0);
+
+    address payable recipient;
+    uint256 value;
+
+    if (auctionState == State.Canceled) {
+      // Auction was cancelled
+
+      recipient = payable(msg.sender);
+      value = bids[msg.sender];
+    } else {
+      // Auction ended (not cancelled)
+
+      if (msg.sender == owner) {
+        // Ended by owner
+
+        recipient = owner;
+        value = highestBindingBid;
+      } else {
+        // Eneded by bidder
+
+        if (msg.sender == highestBidder) {
+          // Highest bidder gets back what they bidded, minus the winning bid
+
+          recipient = highestBidder;
+          value = bids[highestBidder] - highestBindingBid;
+        } else {
+          recipient = payable(msg.sender);
+          value = bids[msg.sender];
+        }
+      }
+    }
+    recipient.transfer(value);
   }
 }
