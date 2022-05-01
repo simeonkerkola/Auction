@@ -100,7 +100,7 @@ contract Auction {
         recipient = owner;
         value = highestBindingBid;
       } else {
-        // Eneded by bidder
+        // Ended by a bidder
 
         if (msg.sender == highestBidder) {
           // Highest bidder gets back what they bidded, minus the winning bid
@@ -113,6 +113,10 @@ contract Auction {
         }
       }
     }
+    // Resetting the bids of the recipient to zero
+    bids[recipient] = 0;
+
+    // Sends the value to the recipient
     recipient.transfer(value);
   }
 }
